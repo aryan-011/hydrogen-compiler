@@ -1,0 +1,4 @@
+C:\Windows\system32\wsl.exe --distribution Ubuntu-22.04 --exec "/mnt/c/Program Files/JetBrains/CLion 2024.1.2/bin/ttyfix" /bin/bash -c "export PATH=\"/usr/bin:$PATH\" && export CLION_IDE=TRUE && export CMAKE_COLOR_DIAGNOSTICS=ON && export JETBRAINS_IDE=TRUE && cd /home/aryan011/compiler/hydrogen/cmake-build-relwithdebinfo-wsl && /usr/bin/cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_MAKE_PROGRAM=/usr/bin/gmake -DCMAKE_C_COMPILER=/usr/bin/gcc '-DCMAKE_CXX_COMPILER=/usr/bin/g++' -G 'CodeBlocks - Unix Makefiles' -S /home/aryan011/compiler/hydrogen -B /home/aryan011/compiler/hydrogen/cmake-build-relwithdebinfo-wsl"
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/aryan011/compiler/hydrogen/cmake-build-relwithdebinfo-wsl
