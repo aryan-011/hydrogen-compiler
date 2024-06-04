@@ -2,6 +2,9 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+
+#include "generator.hpp"
+#include "parser.hpp"
 #include "token.hpp"
 
 
@@ -21,11 +24,32 @@ int main(int argc , char* argv[] ){
         contents=contents_stream.str();
     }
 
-    std::cout<<contents<<std::endl;
-
-    for(std::vector<Token> tokens = tokenize(contents); const auto& it: tokens)
+    // std::cout<<contents<<std::endl;
+    Tokenizer tokenizer(std::move(contents));
+    std::vector<Token> tokens = tokenizer.tokenize();
+    for( const auto& it: tokens)
     {
         std::cout<<TokenTypeToString(it.Type)<<" "<<it.Literal<<std::endl;
     }
+
+    Parser parser(std::move(tokens));
+    std::optional<NodeProg> prog = parser.parseProg();
+
+    if(!prog.has_value())
+    {
+        std::cerr << "Invalid Prog"<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+
+    {
+        Generator generator(prog.value());
+        std::fstream file("out.asm",std::ios::out);
+        file << generator.genProg();
+    }
+
+    system("nasm -felf64 out.asm");
+    system("ld -o out out.o");
+
     return EXIT_SUCCESS;
 }

@@ -3,6 +3,7 @@
 //
 #pragma once
 
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -21,6 +22,8 @@ enum class TokenType {
     SLASH,
     LT,
     GT,
+    LTE,
+    GTE,
     EQ,
     NOT_EQ,
     COMMA,
@@ -60,6 +63,8 @@ inline std::string TokenTypeToString(const TokenType type) {
     case TokenType::ASTERISK: return "*";
     case TokenType::SLASH: return "/";
     case TokenType::LT: return "<";
+    case TokenType::LTE: return "<=";
+    case TokenType::GTE: return ">=";
     case TokenType::GT: return ">";
     case TokenType::EQ: return "==";
     case TokenType::NOT_EQ: return "!=";
@@ -111,141 +116,181 @@ inline TokenType LookupIdentifier(const std::string& iden )
     }
     return TokenType::IDENT;
 }
+class Tokenizer
+{
+public:
+    explicit Tokenizer(std::string src)
+            : m_str(std::move(src))
+    {
+    }
 
-inline std::vector<Token> tokenize(const std::string& str)
+inline std::vector<Token> tokenize()
 {
     std::vector<Token> Tokens;
     std::string buf;
-    for(int i=0;i<str.size();i++)
+    while(peek().has_value())
     {
-        char ch= str.at(i);
-        if(isalpha(ch))
+        if(isalpha(peek().value()))
         {
-            buf.push_back(ch);
-            i++;
-            while (isalnum(str.at(i)))
+            buf.push_back(consume());
+            while (peek().has_value() && isalnum(peek().value()))
             {
-                buf.push_back(str.at(i));
-                i++;
+                buf.push_back(consume());
             }
-            i--;
             TokenType type = LookupIdentifier(buf);
             Tokens.emplace_back(type,type==TokenType::IDENT ?buf:TokenTypeToString(type));
             buf.clear();
         }
-        else if(isdigit(ch))
+        else if(isdigit(peek().value()))
         {
-            buf.push_back(ch);
-            i++;
-            while(isdigit(str.at(i)))
+            buf.push_back(consume());
+            while(peek().has_value() && isdigit(peek().value()))
             {
-                buf.push_back(str.at(i));
-                i++;
+                buf.push_back(consume());
             }
-            i--;
             Tokens.emplace_back(TokenType::INT,buf);
             buf.clear();
         }
-        else if(ch=='=')
+        else if(peek().value()=='=')
         {
-            buf.push_back(ch);
-            if(str.at(i+1) == '=')
+            buf.push_back(consume());
+            if(peek().has_value() && peek().value() == '=')
             {
-                buf.push_back(str.at(++i));
+                buf.push_back(consume());
                 Tokens.emplace_back(TokenType::EQ,buf);
                 continue;
             }
             Tokens.emplace_back(TokenType::ASSIGN,buf);
             buf.clear();
         }
-        else if (ch == '!')
+        else if (peek().value() == '!')
         {
-            buf.push_back(ch);
-            if(str.at(i+1) == '=')
+            buf.push_back(consume());
+            if(peek().has_value() && peek().value() == '=')
             {
-                buf.push_back(str.at(++i));
+                buf.push_back(consume());
                 Tokens.emplace_back(TokenType::NOT_EQ,buf);
                 continue;;
             }
             Tokens.emplace_back(TokenType::BANG,buf);
             buf.clear();
         }
-        else if (ch == '+')
+        else if (peek().value() == '+')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::PLUS, buf);
             buf.clear();
         }
-        else if (ch == '-')
+        else if (peek().value() == '-')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::MINUS, buf);
             buf.clear();
         }
-        else if (ch == '*')
+        else if (peek().value() == '*')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::ASTERISK, buf);
             buf.clear();
         }
-        else if (ch == '/')
+        else if (peek().value() == '/')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::SLASH, buf);
             buf.clear();
         }
-        else if (ch == '<')
+        else if (peek().value() == '<')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
+            if(peek().has_value() && peek().value() == '=')
+            {
+                buf.push_back(consume());
+                Tokens.emplace_back(TokenType::LTE,buf);
+                continue;
+            }
             Tokens.emplace_back(TokenType::LT, buf);
             buf.clear();
         }
-        else if (ch == '>')
+        else if (peek().value() == '>')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
+            if(peek().has_value() && peek().value() == '=')
+            {
+                buf.push_back(consume());
+                Tokens.emplace_back(TokenType::GTE,buf);
+                continue;
+            }
             Tokens.emplace_back(TokenType::GT, buf);
             buf.clear();
         }
-        else if (ch == ',')
+        else if (peek().value() == ',')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::COMMA, buf);
             buf.clear();
         }
-        else if (ch == ';')
+        else if (peek().value() == ';')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::SEMICOLON, buf);
             buf.clear();
         }
-        else if (ch == '(')
+        else if (peek().value() == '(')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::LPAREN, buf);
             buf.clear();
         }
-        else if (ch == ')')
+        else if (peek().value() == ')')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::RPAREN, buf);
             buf.clear();
         }
-        else if (ch == '{')
+        else if (peek().value() == '{')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::LBRACE, buf);
             buf.clear();
         }
-        else if (ch == '}')
+        else if (peek().value() == '}')
         {
-            buf.push_back(ch);
+            buf.push_back(consume());
             Tokens.emplace_back(TokenType::RBRACE, buf);
             buf.clear();
         }
-        else if(isspace(ch))
+        else if(isspace(peek().value()))
         {
+            consume();
             continue;
+        }
+        else
+        {
+            std::cerr << "Missing something , See Doccs for more"<<std::endl;
+            exit(EXIT_FAILURE);
         }
     }
     return Tokens;
 }
+
+private:
+    [[nodiscard]]std::optional<char> peek(const int len = 0) const
+    {
+
+        if (m_index + len >= m_str.size())
+        {
+            return {};
+        }
+        else
+        {
+            return m_str.at(m_index + len);
+        }
+    }
+
+    char consume()
+    {
+        return m_str.at(m_index++);
+    }
+    const std::string m_str;
+    int m_index=0;
+};
