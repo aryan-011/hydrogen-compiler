@@ -10,7 +10,7 @@ This compiler is written in C++.
 Requires `nasm` and `ld` on a Linux operating system.
 
 ```bash
-git clone https://github.com/aryan-011/hydrogen-compiler
+git clone https://github.com/aryan-011/hydrogen-compiler.git
 cd hydrogen-compiler
 mkdir build
 cmake -S . -B build
