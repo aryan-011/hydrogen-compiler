@@ -22,8 +22,7 @@ public:
         }
         else if (auto token = peek(); token.has_value() && token.value().Type == TokenType::IDENT)
         {
-            // Handle identifier expression
-            return {};
+            return NodeExpr{.exp = NodeExprIdent{.ident = consume()}};
         }
         return {};
     }
@@ -49,12 +48,14 @@ public:
         if (peek().has_value() && peek().value().Type == TokenType::LET)
         {
             consume();
-            if (auto ident = tryConsume(TokenType::IDENT); ident.has_value() && peek().has_value() && peek().value().Type == TokenType::EQ)
+            auto ident = tryConsume(TokenType::IDENT);
+            if ( ident.has_value() && peek().has_value() && peek().value().Type == TokenType::ASSIGN)
             {
                 consume(); // Consume '='
                 auto expr = parseExpr();
                 if (expr.has_value())
                 {
+                    consume(); //consume semicolon
                     return NodeStatement{.stmt = NodeLet{.iden = ident.value(), .expr = expr.value()}};
                 }
                 else

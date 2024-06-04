@@ -1,1 +1,3 @@
-return 7;
+let x=8;
+let y=x;
+return y;
