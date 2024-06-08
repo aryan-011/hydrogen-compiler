@@ -29,7 +29,7 @@ int main(int argc , char* argv[] ){
     std::vector<Token> tokens = tokenizer.tokenize();
     for( const auto& it: tokens)
     {
-        std::cout<<TokenTypeToString(it.Type)<<" "<<it.Literal<<std::endl;
+        std::cout<<TokenTypeToString(it.Type)<<" "<<it.Literal.value()<<std::endl;
     }
 
     Parser parser(std::move(tokens));

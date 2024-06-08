@@ -1,3 +1,3 @@
-let x=8;
+let x=7;
 let y=x;
 return y;

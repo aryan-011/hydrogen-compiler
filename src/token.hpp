@@ -43,7 +43,7 @@ enum class TokenType {
 
 struct Token {
     TokenType Type;
-    std::string Literal;
+    std::optional<std::string> Literal{};
 
     // Constructor to initialize the fields
     Token(TokenType type, std::string  literal);

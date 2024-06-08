@@ -5,6 +5,8 @@ add_executable(hydro src/main.cpp
         src/token.hpp
         src/parser.hpp
         src/ast.hpp
-        src/generator.hpp)
+        src/generator.hpp
+        src/arena.hpp
+)
 
 target_include_directories(hydro PUBLIC "${PROJECT_SOURCE_DIR}/src")

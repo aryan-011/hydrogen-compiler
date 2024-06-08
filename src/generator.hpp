@@ -16,51 +16,69 @@ public:
     {
     }
 
-    void genExpression(const NodeExpr& node_expr)
-    {
-        struct ExprVisitor
-        {
+    void genTerm(const NodeTerm* term) {
+        struct TermVisitor {
             Generator* gen;
-            void operator()(const NodeExprIdent& node_expr_ident) const
-            {
-                if(!gen->m_vars.contains(node_expr_ident.ident.Literal))
-                {
-                    std::cerr << "Undeclared Identifier used"<<std::endl;
+            void operator()(const NodeExprIntLit* term_int_lit) const {
+                gen->m_output << "    mov rax, " << term_int_lit->int_lit.Literal.value() << "\n";
+                gen->push("rax");
+            }
+            void operator()(const NodeExprIdent* term_ident) const {
+                if (!gen->m_vars.contains(term_ident->ident.Literal.value())) {
+                    std::cerr << "Undeclared identifier: " << term_ident->ident.Literal.value() << std::endl;
                     exit(EXIT_FAILURE);
                 }
-                const auto& var= gen->m_vars.at(node_expr_ident.ident.Literal);
-                std::stringstream ss;
-                ss << "QWORD [rsp + "<<(gen->m_stack_size - var.var_loc - 1) * 8 <<"]";//8 for 64 bits as we are only using 64 bit register
-                gen->push(ss.str());
+                const auto& var = gen->m_vars.at(term_ident->ident.Literal.value());
+                std::stringstream offset;
+                offset << "QWORD [rsp + " << (gen->m_stack_size - var.var_loc - 1) * 8 << "]\n";
+                gen->push(offset.str());
             }
-            void operator()(const NodeExprIntLit& node_expr_int_lit) const
+        };
+        TermVisitor visitor({.gen = this});
+        std::visit(visitor, term->term);
+    }
+
+    void genExpression(const NodeExpr* node_expr)
+    {
+        struct ExprVisitor {
+            Generator* gen;
+            void operator()(const NodeTerm* term) const
             {
-                gen->m_output <<"    mov rax, " << node_expr_int_lit.int_lit.Literal << "\n" ;
+                gen->genTerm(term);
+            }
+            void operator()(const NodeBinExpr* bin_expr) const
+            {
+                gen->genExpression(bin_expr->add->lhs);
+                gen->genExpression(bin_expr->add->rhs);
+                gen->pop("rax");
+                gen->pop("rbx");
+                gen->m_output << "    add rax, rbx\n";
                 gen->push("rax");
             }
         };
-        ExprVisitor visitor{.gen = this};
-        std::visit(visitor,node_expr.exp);
+
+        ExprVisitor visitor { .gen = this };
+        std::visit(visitor, node_expr->exp);
     }
 
-    void genStatements(const NodeStatement& node_statement)
+    void genStatements(const NodeStatement* node_statement)
     {
         struct StmtVisitor
         {
             Generator* gen;
-            void operator()(const NodeLet& node_let) const
+            void operator()(const NodeLet* node_let) const
             {
-                if(gen->m_vars.contains(node_let.iden.Literal))
+                if(gen->m_vars.contains(node_let->iden.Literal.value()))
                 {
-                    std::cerr << "Alredy used variable "<<node_let.iden.Literal;
+                    std::cerr << "Alredy used variable "<<node_let->iden.Literal.value();
                     exit(EXIT_FAILURE);
                 }
-                gen->m_vars.insert({node_let.iden.Literal , var{.var_loc = gen->m_stack_size}});
-                gen->genExpression(node_let.expr);
+                gen->m_vars.insert({node_let->iden.Literal.value() , var{.var_loc = gen->m_stack_size}});
+                gen->genExpression(node_let->expr);
             }
-            void operator()(const NodeReturn& node_ret) const
+            void operator()(const NodeReturn* node_ret) const
             {
-                gen->genExpression(node_ret.exp);
+                gen->genExpression(node_ret->exp);
                 gen->m_output << "    mov rax, 60\n";
                 gen->pop("rdi");
                 gen->m_output << "    syscall\n";
@@ -68,14 +86,14 @@ public:
         };
 
         StmtVisitor visitor{.gen = this};
-        std::visit(visitor,node_statement.stmt);
+        std::visit(visitor,node_statement->stmt);
     }
 
 
     [[nodiscard]] std::string genProg()
     {
         m_output << "global _start\n_start:\n";
-        for (const NodeStatement& stmt : m_prog.stmts) {
+        for (const NodeStatement* stmt : m_prog.stmts) {
             genStatements(stmt);
         }
 
