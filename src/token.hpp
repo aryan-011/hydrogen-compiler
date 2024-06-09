@@ -41,6 +41,23 @@ enum class TokenType {
     RETURN
 };
 
+std::optional<int> binOpPrec(TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::PLUS:
+        return 1;
+    case TokenType::MINUS:
+        return 1;
+    case TokenType::ASTERISK:
+        return 2;
+    case TokenType::SLASH:
+        return 2;
+    default:
+        return {};
+    }
+}
+
 struct Token {
     TokenType Type;
     std::optional<std::string> Literal{};

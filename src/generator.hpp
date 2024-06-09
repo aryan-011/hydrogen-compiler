@@ -30,14 +30,62 @@ public:
                 }
                 const auto& var = gen->m_vars.at(term_ident->ident.Literal.value());
                 std::stringstream offset;
-                offset << "QWORD [rsp + " << (gen->m_stack_size - var.var_loc - 1) * 8 << "]\n";
+                offset << "QWORD [rsp + " << (gen->m_stack_size - var.var_loc - 1) * 8 << "]";
                 gen->push(offset.str());
+            }
+            void operator()(const NodeTermParen* node_term_paren) const
+            {
+                gen->genExpression(node_term_paren->exp);
             }
         };
         TermVisitor visitor({.gen = this});
         std::visit(visitor, term->term);
     }
-
+    void genBinExpr(const NodeBinExpr* node_bin_expr)
+    {
+        struct BinExpVisitor
+        {
+            Generator* gen;
+            void operator()(const NodeBinExprAdd* node_bin_expr_add) const
+            {
+                gen->genExpression(node_bin_expr_add->rhs);
+                gen->genExpression(node_bin_expr_add->lhs);
+                gen->pop("rax");
+                gen->pop("rbx");
+                gen->m_output << "    add rax, rbx\n";
+                gen->push("rax");
+            }
+            void operator()(const NodeBinExprMult* node_bin_expr_mult) const
+            {
+                gen->genExpression(node_bin_expr_mult->rhs);
+                gen->genExpression(node_bin_expr_mult->lhs);
+                gen->pop("rax");
+                gen->pop("rbx");
+                gen->m_output << "    mul rbx\n";
+                gen->push("rax");
+            }
+            void operator()(const NodeBinExprSub* node_bin_expr_sub)const
+            {
+                gen->genExpression(node_bin_expr_sub->rhs);
+                gen->genExpression(node_bin_expr_sub->lhs);
+                gen->pop("rax");
+                gen->pop("rbx");
+                gen->m_output << "    sub rax, rbx\n";
+                gen->push("rax");
+            }
+            void operator()(const NodeBinExprDiv* node_bin_expr_div)const
+            {
+                gen->genExpression(node_bin_expr_div->rhs);
+                gen->genExpression(node_bin_expr_div->lhs);
+                gen->pop("rax");
+                gen->pop("rbx");
+                gen->m_output << "    div rbx\n";
+                gen->push("rax");
+            }
+        };
+        BinExpVisitor visitor{.gen = this};
+        std::visit(visitor,node_bin_expr->bin_exp);
+    }
     void genExpression(const NodeExpr* node_expr)
     {
         struct ExprVisitor {
@@ -48,12 +96,7 @@ public:
             }
             void operator()(const NodeBinExpr* bin_expr) const
             {
-                gen->genExpression(bin_expr->add->lhs);
-                gen->genExpression(bin_expr->add->rhs);
-                gen->pop("rax");
-                gen->pop("rbx");
-                gen->m_output << "    add rax, rbx\n";
-                gen->push("rax");
+                gen->genBinExpr(bin_expr);
             }
         };
 

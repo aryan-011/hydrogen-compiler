@@ -24,14 +24,32 @@ struct NodeBinExprAdd
     NodeExpr* lhs;
     NodeExpr* rhs;
 };
-
+struct NodeBinExprMult
+{
+    NodeExpr* lhs;
+    NodeExpr* rhs;
+};
+struct NodeBinExprSub
+{
+    NodeExpr* lhs;
+    NodeExpr* rhs;
+};
+struct NodeBinExprDiv
+{
+    NodeExpr* lhs;
+    NodeExpr* rhs;
+};
+struct NodeTermParen
+{
+    NodeExpr* exp;
+};
 struct NodeTerm
 {
-    std::variant<NodeExprIdent*,NodeExprIntLit*> term;
+    std::variant<NodeExprIdent*,NodeExprIntLit*,NodeTermParen*> term;
 };
 struct NodeBinExpr
 {
-    NodeBinExprAdd* add;
+    std::variant<NodeBinExprAdd*,NodeBinExprMult*,NodeBinExprSub*,NodeBinExprDiv*> bin_exp;
 };
 
 struct NodeExpr
