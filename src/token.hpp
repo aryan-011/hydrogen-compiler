@@ -168,6 +168,30 @@ inline std::vector<Token> tokenize()
             Tokens.emplace_back(TokenType::INT,buf);
             buf.clear();
         }
+        else if(peek().value()=='/' && peek(1).has_value() && peek(1).value() == '/')
+        {
+            consume();
+            consume();
+            while(peek().has_value() && peek().value()!='\n')
+            {
+                consume();
+            }
+        }
+        else if(peek().value()=='/' && peek(1).has_value() && peek(1).value() == '*')
+        {
+            consume();
+            consume();
+            while(peek().has_value())
+            {
+                if(peek().value()=='*' && peek(1).has_value() && peek(1).value()=='/')
+                {
+                    break;
+                }
+                consume();
+            }
+            consume();
+            consume();
+        }
         else if(peek().value()=='=')
         {
             buf.push_back(consume());
