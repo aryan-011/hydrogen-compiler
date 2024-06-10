@@ -31,12 +31,12 @@ The grammar supported is:
 }
 
 [Cond] → {
-    [term] &lt; [term]
-    [term] &gt; [term]
-    [term] &lt;= [term]
-    [term] &gt;= [term]
-    [term]! = [term]
-    [term] == [term]
+    [Term] &lt; [Term]
+    [Term] &gt; [Term]
+    [Term] &lt;= [Term]
+    [Term] &gt;= [Term]
+    [Term]! = [Term]
+    [Term] == [Term]
 }
 
 [Expr] → {
