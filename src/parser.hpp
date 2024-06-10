@@ -130,6 +130,66 @@ public:
         return expr_lhs;
     }
 
+    std::optional<NodeCond*> parseCond()
+    {
+        auto term_lhs = parseTerm();
+        if (!term_lhs) {
+            return {};
+        }
+
+        auto op = consume();
+        auto term_rhs = parseTerm();
+        if (!term_rhs) {
+            return {};
+        }
+
+        auto cond = m_allocator.alloc<NodeCond>();
+
+        auto allocateAndSetCond = [&](auto node) {
+            node->lhs = term_lhs.value();
+            node->rhs = term_rhs.value();
+            cond->condn = node;
+            return cond;
+        };
+
+        switch (op.Type) {
+        case TokenType::EQ:
+            return allocateAndSetCond(m_allocator.alloc<NodeEQ>());
+        case TokenType::NOT_EQ:
+            return allocateAndSetCond(m_allocator.alloc<NodeNEQ>());
+        case TokenType::LT:
+            return allocateAndSetCond(m_allocator.alloc<NodeLT>());
+        case TokenType::LTE:
+            return allocateAndSetCond(m_allocator.alloc<NodeLTE>());
+        case TokenType::GT:
+            return allocateAndSetCond(m_allocator.alloc<NodeGT>());
+        case TokenType::GTE:
+            return allocateAndSetCond(m_allocator.alloc<NodeGTE>());
+        default:
+            std::cerr << "Unable to parse condition" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    std::optional<NodeScopedStmts*> parseScopedStmts()
+    {
+        if(!tryConsume(TokenType::LBRACE).has_value())
+        {
+            std::cerr << "expected '{'";
+        }
+        const auto scope_stmts = m_allocator.alloc<NodeScopedStmts>();
+        while(auto stmt= parseStmts())
+        {
+            scope_stmts->stmts.push_back(stmt.value());
+        }
+        if(!tryConsume(TokenType::RBRACE).has_value())
+        {
+            std::cerr << "Expected '}'"<<std::endl;
+            exit(EXIT_FAILURE);
+        }
+        return scope_stmts;
+    }
+
     std::optional<NodeStatement*> parseStmts()
     {
         if (peek().has_value() && peek().value().Type == TokenType::RETURN)
@@ -180,20 +240,52 @@ public:
                 exit(EXIT_FAILURE);
             }
         }
-        else if(tryConsume(TokenType::LBRACE).has_value())
+        else if(peek().has_value() && peek().value().Type == TokenType::LBRACE)
         {
-            const auto scope_stmts = m_allocator.alloc<NodeScopedStmts>();
-            while(auto stmt= parseStmts())
+            auto scope_stmts = parseScopedStmts();
+            auto stmts = m_allocator.alloc<NodeStatement>();
+            stmts->stmt=scope_stmts.value();
+            return stmts;
+        }
+        else if(tryConsume(TokenType::IF).has_value())
+        {
+            if(!tryConsume(TokenType::LPAREN).has_value())
             {
-                scope_stmts->stmts.push_back(stmt.value());
-            }
-            if(!tryConsume(TokenType::RBRACE).has_value())
-            {
-                std::cerr << "Expected '}'"<<std::endl;
+                std::cerr << "Expected '('"<<std::endl;
                 exit(EXIT_FAILURE);
             }
+            auto condn = parseCond();
+            if(!tryConsume(TokenType::RPAREN).has_value())
+            {
+                std::cerr << "Expected ')'"<<std::endl;
+                exit(EXIT_FAILURE);
+            }
+            if(!condn.has_value())
+            {
+                std::cerr << "Unable to parse Condition"<<std::endl;
+                exit(EXIT_FAILURE);
+            }
+            auto if_stmt = m_allocator.alloc<NodeIfStmt>();
+
+            auto if_scope_stmts = parseScopedStmts();
             auto stmts = m_allocator.alloc<NodeStatement>();
-            stmts->stmt=scope_stmts;
+            if(peek().has_value() && peek().value().Type == TokenType::ELSE)
+            {
+                consume();
+                auto else_scope_stmts = parseScopedStmts();
+                auto if_else_node = m_allocator.alloc<NodeIfElseStmt>();
+
+                if_else_node->cond = condn.value();
+                if_else_node->if_stmts = if_scope_stmts.value();
+                if_else_node->else_stmts = else_scope_stmts.value();
+                stmts->stmt = if_else_node;
+                return stmts;
+            }
+
+            if_stmt->cond = condn.value();
+            if_stmt->stmts =  if_scope_stmts.value();
+
+            stmts->stmt = if_stmt;
             return stmts;
         }
 

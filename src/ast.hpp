@@ -71,9 +71,55 @@ struct NodeScopedStmts
 {
     std::vector<NodeStatement*> stmts;
 };
+struct NodeLTE
+{
+    NodeTerm* lhs;
+    NodeTerm* rhs;
+};
+struct NodeGTE
+{
+    NodeTerm* lhs;
+    NodeTerm* rhs;
+};
+
+struct NodeLT
+{
+    NodeTerm* lhs;
+    NodeTerm* rhs;
+};
+struct NodeGT
+{
+    NodeTerm* lhs;
+    NodeTerm* rhs;
+};
+struct NodeEQ
+{
+    NodeTerm* lhs;
+    NodeTerm* rhs;
+};
+struct NodeNEQ
+{
+    NodeTerm* lhs;
+    NodeTerm* rhs;
+};
+struct NodeCond
+{
+    std::variant<NodeLTE*,NodeGTE*,NodeLT*,NodeGT*,NodeEQ*,NodeNEQ*> condn;
+};
+struct NodeIfStmt
+{
+    NodeCond* cond;
+    NodeScopedStmts* stmts;
+};
+struct NodeIfElseStmt
+{
+    NodeCond* cond;
+    NodeScopedStmts* if_stmts;
+    NodeScopedStmts* else_stmts;
+};
 struct NodeStatement
 {
-    std::variant<NodeReturn*,NodeLet*,NodeScopedStmts*> stmt;
+    std::variant<NodeReturn*,NodeLet*,NodeScopedStmts*,NodeIfStmt*,NodeIfElseStmt*> stmt;
 };
 
 struct NodeProg

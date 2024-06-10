@@ -175,6 +175,7 @@ inline std::vector<Token> tokenize()
             {
                 buf.push_back(consume());
                 Tokens.emplace_back(TokenType::EQ,buf);
+                buf.clear();
                 continue;
             }
             Tokens.emplace_back(TokenType::ASSIGN,buf);
@@ -187,6 +188,7 @@ inline std::vector<Token> tokenize()
             {
                 buf.push_back(consume());
                 Tokens.emplace_back(TokenType::NOT_EQ,buf);
+                buf.clear();
                 continue;;
             }
             Tokens.emplace_back(TokenType::BANG,buf);
@@ -223,6 +225,7 @@ inline std::vector<Token> tokenize()
             {
                 buf.push_back(consume());
                 Tokens.emplace_back(TokenType::LTE,buf);
+                buf.clear();
                 continue;
             }
             Tokens.emplace_back(TokenType::LT, buf);
@@ -235,6 +238,7 @@ inline std::vector<Token> tokenize()
             {
                 buf.push_back(consume());
                 Tokens.emplace_back(TokenType::GTE,buf);
+                buf.clear();
                 continue;
             }
             Tokens.emplace_back(TokenType::GT, buf);

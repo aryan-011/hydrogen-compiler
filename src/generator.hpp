@@ -4,6 +4,7 @@
 
 #pragma once
 #include <algorithm>
+#include <cassert>
 #include <sstream>
 
 #include "ast.hpp"
@@ -108,6 +109,87 @@ public:
         std::visit(visitor, node_expr->exp);
     }
 
+    void genCondition(const NodeCond* node_cond)
+    {
+        struct ConditionVisitor
+        {
+            Generator* gen;
+            void operator()(const NodeEQ* node_eq) const {
+                gen->genTerm(node_eq->lhs);
+                gen->genTerm(node_eq->rhs);
+                gen->pop("rbx");
+                gen->pop("rax");
+                gen->m_output << "    cmp rax, rbx\n";
+                gen->m_output << "    sete al\n"; // set al to 1 if equal
+                gen->m_output << "    movzx rax, al\n"; // zero-extend al to rax
+                gen->push("rax");
+            }
+            void operator()(const NodeNEQ* node_neq) const {
+                gen->genTerm(node_neq->lhs);
+                gen->genTerm(node_neq->rhs);
+                gen->pop("rbx");
+                gen->pop("rax");
+                gen->m_output << "    cmp rax, rbx\n";
+                gen->m_output << "    setne al\n"; // set al to 1 if not equal
+                gen->m_output << "    movzx rax, al\n"; // zero-extend al to rax
+                gen->push("rax");
+            }
+            void operator()(const NodeLT* node_lt) const {
+                gen->genTerm(node_lt->lhs);
+                gen->genTerm(node_lt->rhs);
+                gen->pop("rbx");
+                gen->pop("rax");
+                gen->m_output << "    cmp rax, rbx\n";
+                gen->m_output << "    setl al\n"; // set al to 1 if less
+                gen->m_output << "    movzx rax, al\n"; // zero-extend al to rax
+                gen->push("rax");
+            }
+            void operator()(const NodeLTE* node_lte) const {
+                gen->genTerm(node_lte->lhs);
+                gen->genTerm(node_lte->rhs);
+                gen->pop("rbx");
+                gen->pop("rax");
+                gen->m_output << "    cmp rax, rbx\n";
+                gen->m_output << "    setle al\n"; // set al to 1 if less or equal
+                gen->m_output << "    movzx rax, al\n"; // zero-extend al to rax
+                gen->push("rax");
+            }
+            void operator()(const NodeGT* node_gt) const {
+                gen->genTerm(node_gt->lhs);
+                gen->genTerm(node_gt->rhs);
+                gen->pop("rbx");
+                gen->pop("rax");
+                gen->m_output << "    cmp rax, rbx\n";
+                gen->m_output << "    setg al\n"; // set al to 1 if greater
+                gen->m_output << "    movzx rax, al\n"; // zero-extend al to rax
+                gen->push("rax");
+            }
+            void operator()(const NodeGTE* node_gte) const {
+                gen->genTerm(node_gte->lhs);
+                gen->genTerm(node_gte->rhs);
+                gen->pop("rbx");
+                gen->pop("rax");
+                gen->m_output << "    cmp rax, rbx\n";
+                gen->m_output << "    setge al\n"; // set al to 1 if greater or equal
+                gen->m_output << "    movzx rax, al\n"; // zero-extend al to rax
+                gen->push("rax");
+            }
+        };
+
+        ConditionVisitor visitor{.gen = this};
+        std::visit(visitor,node_cond->condn);
+    }
+
+    void genScopedStmts(const NodeScopedStmts* node_scoped_stmts)
+    {
+        beginScope();
+        for(auto stmt:node_scoped_stmts->stmts)
+        {
+            genStatements(stmt);
+        }
+        endScope();
+    }
+
     void genStatements(const NodeStatement* node_statement)
     {
         struct StmtVisitor
@@ -136,12 +218,35 @@ public:
             }
             void operator()(const NodeScopedStmts* node_scoped_stmts) const
             {
-                gen->beginScope();
-                for(auto stmt:node_scoped_stmts->stmts)
-                {
-                    gen->genStatements(stmt);
-                }
-                gen->endScope();
+                gen->genScopedStmts(node_scoped_stmts);
+            }
+            void operator()(const NodeIfStmt* node_if_stmt) const
+            {
+                gen->genCondition(node_if_stmt->cond);
+
+                auto endIfLabel = gen->generateLabel();
+                gen->m_output << "    cmp rax, 0"<< "\n";
+                gen->m_output << "    je "<<endIfLabel <<"\n";
+
+                gen->genScopedStmts(node_if_stmt->stmts);
+
+                gen->m_output<<endIfLabel<<":\n";
+            }
+            void operator ()(const NodeIfElseStmt* node_if_else_stmt) const
+            {
+                gen->genCondition(node_if_else_stmt->cond);
+                const auto endIfLabel = gen->generateLabel();
+                gen->m_output << "    cmp rax, 0"<< "\n";
+                gen->m_output << "    je "<<endIfLabel <<"\n";
+
+                gen->genScopedStmts(node_if_else_stmt->if_stmts);
+                const auto endElseLabel = gen->generateLabel();
+                gen->m_output << "    jmp "<<endElseLabel <<"\n";
+                gen->m_output<<"    "<<endIfLabel<<":\n";
+
+                gen->genScopedStmts(node_if_else_stmt->else_stmts);
+                gen->m_output<<"    "<<endElseLabel<<":\n";
+
             }
         };
 
@@ -195,10 +300,14 @@ private:
         }
         m_scopes.pop_back();
     }
+    std::string generateLabel() {
+        return "L" + std::to_string(labelCount++);
+    }
 
     std::stringstream m_output;
     NodeProg  m_prog;
     size_t m_stack_size=0;
+    int labelCount =0;
     // std::unordered_map<std::string,var> m_vars; removed to handle scopes
     std::vector<var> m_vars{};
     std::vector<size_t> m_scopes{};
