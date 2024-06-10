@@ -17,43 +17,43 @@ cmake -S . -B build
 cmake --build build
 
 ```
-$$
-\begin{align*}
-[\text{Prog}] &\to [\text{Stmt}]^* \\
-[\text{Stmt}] &\to
-\begin{cases}
-\text{return} [\text{Expr}]; \\
-\text{let}\ \text{ident} = [\text{Expr}];\\
-\{ [\text{Stmt}]^*\}\\
- if( \text{Cond} ) \{ [\text{Stmt}]^*\} \\
- if( \text{Cond} ) \{ [\text{Stmt}]^*\}else\{[\text{Stmt}]^*\} \\
-\end{cases} \\
-[Cond] &\to
-\begin{cases}
-[\text{term}] < [\text{term}]\\
-[\text{term}] > [\text{term}]\\
-[\text{term}] <= [\text{term}]\\
-[\text{term}] >= [\text{term}]\\
-[\text{term}] != [\text{term}]\\
-[\text{term}] == [\text{term}]\\
-\end{cases}\\
-[\text{Expr}] &\to
-\begin{cases}
-[\text{Term}] \\
-[\text{BinExpr}]
-\end{cases} \\
-[\text{BinExpr}] &\to
-\begin{cases}
-[\text{Expr}] * [\text{Expr}] & \text{prec} = 2 \\
-[\text{Expr}] / [\text{Expr}] & \text{prec} = 2 \\
-[\text{Expr}] + [\text{Expr}] & \text{prec} = 1 \\
-[\text{Expr}] - [\text{Expr}] & \text{prec} = 1 \\
-\end{cases} \\
-[\text{Term}] &\to
-\begin{cases}
-\text{int\_lit} \\
-\text{ident} \\
-([\text{Expr}])
-\end{cases}
-\end{align*}
-$$
+<pre>
+The grammar supported is:
+
+[Prog] → [Stmt]*
+
+[Stmt] → {
+    return[Expr];
+    let ident = [Expr];
+    {[Stmt]*}
+    if(Cond){[Stmt]*}
+    if(Cond){[Stmt]*}else{[Stmt]*}
+}
+
+[Cond] → {
+    [term] &lt; [term]
+    [term] &gt; [term]
+    [term] &lt;= [term]
+    [term] &gt;= [term]
+    [term]! = [term]
+    [term] == [term]
+}
+
+[Expr] → {
+    [Term]
+    [BinExpr]
+}
+
+[BinExpr] → {
+    [Expr] * [Expr]    prec = 2
+    [Expr]/[Expr]      prec = 2
+    [Expr] + [Expr]    prec = 1
+    [Expr] - [Expr]    prec = 1
+}
+
+[Term] → {
+    int_lit
+    ident
+    ([Expr])
+}
+</pre>
