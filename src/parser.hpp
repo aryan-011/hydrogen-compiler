@@ -128,51 +128,6 @@ public:
             expr_lhs->exp = expr;
         }
         return expr_lhs;
-
-        // if (auto term = parseTerm()) {
-        //     if (tryConsume(TokenType::PLUS).has_value()) {
-        //         auto bin_expr = m_allocator.alloc<NodeBinExpr>();
-        //         auto bin_expr_add = m_allocator.alloc<NodeBinExprAdd>();
-        //         auto lhs_expr = m_allocator.alloc<NodeExpr>();
-        //         lhs_expr->exp= term.value();
-        //         bin_expr_add->lhs = lhs_expr;
-        //         if (auto rhs = parseExpr()) {
-        //             bin_expr_add->rhs = rhs.value();
-        //             bin_expr->bin_exp = bin_expr_add;
-        //             auto expr = m_allocator.alloc<NodeExpr>();
-        //             expr->exp = bin_expr;
-        //             return expr;
-        //         }
-        //         else {
-        //             std::cerr << "Expected expression" << std::endl;
-        //             exit(EXIT_FAILURE);
-        //         }
-        //     }
-        //     else if (tryConsume(TokenType::ASTERISK).has_value())
-        //     {
-        //         auto bin_expr = m_allocator.alloc<NodeBinExpr>();
-        //         auto bin_expr_mul = m_allocator.alloc<NodeBinExprMult>();
-        //         auto lhs_expr = m_allocator.alloc<NodeExpr>();
-        //         lhs_expr->exp = term.value();
-        //         bin_expr_mul->lhs = lhs_expr;
-        //         if(const auto rhs = parseExpr())
-        //         {
-        //             bin_expr_mul->rhs = rhs.value();
-        //             bin_expr->bin_exp = bin_expr_mul;
-        //             auto expr = m_allocator.alloc<NodeExpr>();
-        //             expr->exp = bin_expr;
-        //             return expr;
-        //         }
-        //     }
-        //     else {
-        //         auto expr = m_allocator.alloc<NodeExpr>();
-        //         expr->exp = term.value();
-        //         return expr;
-        //     }
-        // }
-        // else {
-        //     return {};
-        // }
     }
 
     std::optional<NodeStatement*> parseStmts()
@@ -224,6 +179,22 @@ public:
                 std::cerr << "Error: expected identifier and '=' in let statement.\n";
                 exit(EXIT_FAILURE);
             }
+        }
+        else if(tryConsume(TokenType::LBRACE).has_value())
+        {
+            const auto scope_stmts = m_allocator.alloc<NodeScopedStmts>();
+            while(auto stmt= parseStmts())
+            {
+                scope_stmts->stmts.push_back(stmt.value());
+            }
+            if(!tryConsume(TokenType::RBRACE).has_value())
+            {
+                std::cerr << "Expected '}'"<<std::endl;
+                exit(EXIT_FAILURE);
+            }
+            auto stmts = m_allocator.alloc<NodeStatement>();
+            stmts->stmt=scope_stmts;
+            return stmts;
         }
 
         return {};

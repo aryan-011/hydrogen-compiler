@@ -65,9 +65,15 @@ struct NodeLet
     Token iden;
     NodeExpr* expr ;
 };
+struct NodeStatement;
+
+struct NodeScopedStmts
+{
+    std::vector<NodeStatement*> stmts;
+};
 struct NodeStatement
 {
-    std::variant<NodeReturn*,NodeLet*> stmt;
+    std::variant<NodeReturn*,NodeLet*,NodeScopedStmts*> stmt;
 };
 
 struct NodeProg
